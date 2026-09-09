@@ -1,0 +1,54 @@
+erDiagram
+    USERS {
+        uuid id PK
+        string role
+        string full_name
+        string phone
+        string license_number
+        datetime created_at
+    }
+
+    VEHICLES {
+        uuid id PK
+        string license_plate
+        string make_model
+        string status
+        int fuel_level
+        int mileage
+    }
+
+    TARIFFS {
+        uuid id PK
+        string name
+        decimal price_per_minute
+        decimal price_per_km
+    }
+
+    RENTALS {
+        uuid id PK
+        uuid user_id FK
+        uuid vehicle_id FK
+        uuid tariff_id FK
+        datetime start_time
+        datetime end_time
+        int start_mileage
+        int end_mileage
+        decimal total_cost
+        string status
+    }
+
+    PAYMENTS {
+        uuid id PK
+        uuid user_id FK
+        uuid rental_id FK
+        decimal amount
+        string type
+        string status
+        datetime processed_at
+    }
+
+    USERS ||--o{ RENTALS : "makes"
+    VEHICLES ||--o{ RENTALS : "involved_in"
+    TARIFFS ||--o{ RENTALS : "applied_to"
+    USERS ||--o{ PAYMENTS : "owns"
+    RENTALS ||--o{ PAYMENTS : "requires"

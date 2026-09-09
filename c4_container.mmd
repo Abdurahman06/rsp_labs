@@ -1,0 +1,28 @@
+C4Container
+    title Container Diagram for Carsharing API
+
+    Person(driver, "Водитель", "Клиент сервиса, арендующий автомобили")
+    Person(operator, "Оператор автопарка", "Сотрудник, следящий за состоянием машин")
+
+    System_Boundary(carsharing, "Carsharing Platform") {
+        Container(mobile_app, "Mobile App", "Flutter / Kotlin / Swift", "Приложение для поиска авто и управления арендой (Водитель)")
+        Container(web_admin, "Admin Web Portal", "React / Vue", "Панель управления автопарком (Оператор)")
+        Container(backend_api, "Backend API Service", "Go / Python / Java", "Основной сервер обработки бизнес-логики, тарификации и аренды")
+        ContainerDb(database, "Relational Database", "PostgreSQL", "Хранит пользователей, автомобили, историю поездок, транзакции")
+        ContainerDb(redis, "In-Memory Cache", "Redis", "Кэширует геолокацию машин и активные сессии")
+    }
+
+    System_Ext(payment_gw, "Payment Gateway", "YooKassa / Stripe", "Обработка платежей и блокировка депозита")
+    System_Ext(telematics, "IoT Telematics System", "GPS Tracker / OBD-II", "Передача данных о пробеге, уровне топлива и координатах авто")
+
+    Rel(driver, mobile_app, "Использует для аренды", "HTTPS")
+    Rel(operator, web_admin, "Управляет автопарком", "HTTPS")
+    
+    Rel(mobile_app, backend_api, "Вызывает API", "JSON/HTTPS")
+    Rel(web_admin, backend_api, "Вызывает API", "JSON/HTTPS")
+    
+    Rel(backend_api, database, "Чтение и запись данных", "SQL/TCP")
+    Rel(backend_api, redis, "Чтение и обновление статусов", "RESP/TCP")
+    
+    Rel(backend_api, payment_gw, "Блокировка депозита и оплата", "JSON/HTTPS")
+    Rel(telematics, backend_api, "Отправляет телеметрию (топливо, пробег)", "MQTT")
