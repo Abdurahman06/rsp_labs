@@ -1,28 +1,28 @@
 C4Container
-    title Container Diagram for Hotel Booking API
+    title Container Diagram for City Hotels Booking API
 
-    Person(guest, "Гость", "Клиент отеля, бронирующий номера")
-    Person(admin, "Администратор", "Сотрудник отеля, управляющий номерами и бронями")
+    Person(guest, "Гость", "Пользователь, ищущий и бронирующий отели")
+    Person(manager, "Менеджер отеля", "Представитель отеля, управляющий номерами")
 
-    System_Boundary(hotel_system, "Hotel Booking Platform") {
-        Container(web_app, "Web Portal", "React / Vue", "Пользовательский интерфейс для бронирования номеров")
-        Container(admin_panel, "Admin Web Portal", "React / Vue", "Панель управления отелем для администраторов")
-        Container(backend_api, "Backend API Service", "Go / Python / Java", "Основной сервер бизнес-логики, проверки доступности номеров и бронирования")
-        ContainerDb(database, "Relational Database", "PostgreSQL", "Хранение данных пользователей, номеров, услуг, бронирований и платежей")
-        ContainerDb(redis, "In-Memory Cache", "Redis", "Кэширование каталога номеров и сессий пользователей")
+    System_Boundary(booking_platform, "Hotels Booking Platform") {
+        Container(web_app, "Web Portal", "React / Vue", "Клиентский веб-интерфейс для поиска отелей и бронирования")
+        Container(manager_panel, "Manager Portal", "React / Vue", "Панель управления отелем для менеджеров")
+        Container(backend_api, "Backend API Service", "Go / Python / Java", "Основной сервер бизнес-логики, поиска, бронирования и отзывов")
+        ContainerDb(database, "Relational Database", "PostgreSQL", "Хранение пользователей, отелей, номеров, бронирований и отзывов")
+        ContainerDb(redis, "In-Memory Cache", "Redis", "Кэширование списка отелей, популярных номеров и сессий")
     }
 
     System_Ext(payment_gw, "Payment Gateway", "YooKassa / Stripe", "Обработка онлайн-оплаты бронирований")
-    System_Ext(email_service, "Email Notification Service", "SMTP / SendGrid", "Отправка подтверждений бронирования на почту")
+    System_Ext(email_service, "Email Service", "SMTP / SendGrid", "Отправка подтверждений бронирования")
 
     Rel(guest, web_app, "Использует", "HTTPS")
-    Rel(admin, admin_panel, "Использует", "HTTPS")
+    Rel(manager, manager_panel, "Использует", "HTTPS")
     
     Rel(web_app, backend_api, "API запросы", "JSON/HTTPS")
-    Rel(admin_panel, backend_api, "API запросы", "JSON/HTTPS")
+    Rel(manager_panel, backend_api, "API запросы", "JSON/HTTPS")
     
     Rel(backend_api, database, "Чтение / Запись", "SQL/TCP")
     Rel(backend_api, redis, "Чтение / Запись", "RESP/TCP")
     
     Rel(backend_api, payment_gw, "Проведение оплаты", "JSON/HTTPS")
-    Rel(backend_api, email_service, "Отправка уведомлений", "SMTP/HTTPS")
+    Rel(backend_api, email_service, "Уведомления", "SMTP/HTTPS")
