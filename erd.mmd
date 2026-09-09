@@ -3,52 +3,48 @@ erDiagram
         uuid id PK
         string role
         string full_name
+        string email
         string phone
-        string license_number
         datetime created_at
     }
 
-    VEHICLES {
+    ROOMS {
         uuid id PK
-        string license_plate
-        string make_model
+        string room_number
+        string category
+        decimal price_per_night
         string status
-        int fuel_level
-        int mileage
+        int capacity
     }
 
-    TARIFFS {
+    SERVICES {
         uuid id PK
         string name
-        decimal price_per_minute
-        decimal price_per_km
+        decimal price
+        string description
     }
 
-    RENTALS {
+    BOOKINGS {
         uuid id PK
         uuid user_id FK
-        uuid vehicle_id FK
-        uuid tariff_id FK
-        datetime start_time
-        datetime end_time
-        int start_mileage
-        int end_mileage
+        uuid room_id FK
+        uuid service_id FK
+        date check_in_date
+        date check_out_date
         decimal total_cost
         string status
     }
 
     PAYMENTS {
         uuid id PK
-        uuid user_id FK
-        uuid rental_id FK
+        uuid booking_id FK
         decimal amount
-        string type
+        string payment_method
         string status
-        datetime processed_at
+        datetime paid_at
     }
 
-    USERS ||--o{ RENTALS : "makes"
-    VEHICLES ||--o{ RENTALS : "involved_in"
-    TARIFFS ||--o{ RENTALS : "applied_to"
-    USERS ||--o{ PAYMENTS : "owns"
-    RENTALS ||--o{ PAYMENTS : "requires"
+    USERS ||--o{ BOOKINGS : "makes"
+    ROOMS ||--o{ BOOKINGS : "reserved_in"
+    SERVICES ||--o{ BOOKINGS : "included_in"
+    BOOKINGS ||--o{ PAYMENTS : "paid_by"

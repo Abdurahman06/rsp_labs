@@ -1,28 +1,28 @@
 C4Container
-    title Container Diagram for Carsharing API
+    title Container Diagram for Hotel Booking API
 
-    Person(driver, "Водитель", "Клиент сервиса, арендующий автомобили")
-    Person(operator, "Оператор автопарка", "Сотрудник, следящий за состоянием машин")
+    Person(guest, "Гость", "Клиент отеля, бронирующий номера")
+    Person(admin, "Администратор", "Сотрудник отеля, управляющий номерами и бронями")
 
-    System_Boundary(carsharing, "Carsharing Platform") {
-        Container(mobile_app, "Mobile App", "Flutter / Kotlin / Swift", "Приложение для поиска авто и управления арендой (Водитель)")
-        Container(web_admin, "Admin Web Portal", "React / Vue", "Панель управления автопарком (Оператор)")
-        Container(backend_api, "Backend API Service", "Go / Python / Java", "Основной сервер обработки бизнес-логики, тарификации и аренды")
-        ContainerDb(database, "Relational Database", "PostgreSQL", "Хранит пользователей, автомобили, историю поездок, транзакции")
-        ContainerDb(redis, "In-Memory Cache", "Redis", "Кэширует геолокацию машин и активные сессии")
+    System_Boundary(hotel_system, "Hotel Booking Platform") {
+        Container(web_app, "Web Portal", "React / Vue", "Пользовательский интерфейс для бронирования номеров")
+        Container(admin_panel, "Admin Web Portal", "React / Vue", "Панель управления отелем для администраторов")
+        Container(backend_api, "Backend API Service", "Go / Python / Java", "Основной сервер бизнес-логики, проверки доступности номеров и бронирования")
+        ContainerDb(database, "Relational Database", "PostgreSQL", "Хранение данных пользователей, номеров, услуг, бронирований и платежей")
+        ContainerDb(redis, "In-Memory Cache", "Redis", "Кэширование каталога номеров и сессий пользователей")
     }
 
-    System_Ext(payment_gw, "Payment Gateway", "YooKassa / Stripe", "Обработка платежей и блокировка депозита")
-    System_Ext(telematics, "IoT Telematics System", "GPS Tracker / OBD-II", "Передача данных о пробеге, уровне топлива и координатах авто")
+    System_Ext(payment_gw, "Payment Gateway", "YooKassa / Stripe", "Обработка онлайн-оплаты бронирований")
+    System_Ext(email_service, "Email Notification Service", "SMTP / SendGrid", "Отправка подтверждений бронирования на почту")
 
-    Rel(driver, mobile_app, "Использует для аренды", "HTTPS")
-    Rel(operator, web_admin, "Управляет автопарком", "HTTPS")
+    Rel(guest, web_app, "Использует", "HTTPS")
+    Rel(admin, admin_panel, "Использует", "HTTPS")
     
-    Rel(mobile_app, backend_api, "Вызывает API", "JSON/HTTPS")
-    Rel(web_admin, backend_api, "Вызывает API", "JSON/HTTPS")
+    Rel(web_app, backend_api, "API запросы", "JSON/HTTPS")
+    Rel(admin_panel, backend_api, "API запросы", "JSON/HTTPS")
     
-    Rel(backend_api, database, "Чтение и запись данных", "SQL/TCP")
-    Rel(backend_api, redis, "Чтение и обновление статусов", "RESP/TCP")
+    Rel(backend_api, database, "Чтение / Запись", "SQL/TCP")
+    Rel(backend_api, redis, "Чтение / Запись", "RESP/TCP")
     
-    Rel(backend_api, payment_gw, "Блокировка депозита и оплата", "JSON/HTTPS")
-    Rel(telematics, backend_api, "Отправляет телеметрию (топливо, пробег)", "MQTT")
+    Rel(backend_api, payment_gw, "Проведение оплаты", "JSON/HTTPS")
+    Rel(backend_api, email_service, "Отправка уведомлений", "SMTP/HTTPS")

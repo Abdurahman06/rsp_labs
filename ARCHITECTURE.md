@@ -1,55 +1,55 @@
-# Архитектура сервиса аренды автомобилей (Carsharing API)
+# Архитектура сервиса бронирования номеров отеля (Hotel Booking API)
 
 ## Описание проекта
-Бэкенд-сервис для системы каршеринга. Приложение обеспечивает поиск, бронирование и аренду автомобилей пользователями, а также управление автопарком со стороны операторов. Реализован учет пробега и уровня топлива, отслеживание доступности авто и заморозка (холдирование) депозита на карте клиента.
+Бэкенд-сервис для системы бронирования номеров в отеле. Приложение обеспечивает поиск и бронирование номеров гостями, выбор дополнительных услуг (завтрак, трансфер, СПА), а также управление фондом номеров и бронированиями со стороны администраторов отеля.
 
 ## Ролевая модель и Use Cases
 
-### Водитель
-- Регистрация и аутентификация
-- Поиск свободных автомобилей на карте
-- Бронирование и старт аренды
-- Завершение аренды и расчет стоимости
-- Просмотр истории поездок
+### Гость (Guest)
+- Регистрация и аутентификация в системе
+- Поиск свободных номеров на выбранные даты
+- Бронирование номера с выбором дополнительных услуг
+- Оплата бронирования
+- Просмотр истории своих бронирований и отмена брони
 
-### Оператор автопарка
-- Добавление и редактирование автомобилей
-- Изменение статусов авто (доступен, в ремонте, заблокирован)
-- Мониторинг пробега, уровня топлива и текущих координат
-- Просмотр общей статистики поездок
-- Управление тарифами
+### Администратор отеля (Hotel Admin)
+- Добавление и редактирование номеров (цена, категория, статус)
+- Изменение статуса номеров (доступен, занят, на обслуживании)
+- Просмотр и управление всеми бронированиями гостей
+- Добавление и редактирование дополнительных услуг
+- Мониторинг платежей и отчетов
 
 ## Диаграмма C4 Container (Уровень 2)
 
 ```mermaid
 C4Container
-    title Container Diagram for Carsharing API
+    title Container Diagram for Hotel Booking API
 
-    Person(driver, "Водитель", "Клиент сервиса, арендующий автомобили")
-    Person(operator, "Оператор автопарка", "Сотрудник, следящий за состоянием машин")
+    Person(guest, "Гость", "Клиент отеля, бронирующий номера")
+    Person(admin, "Администратор", "Сотрудник отеля, управляющий номерами и бронями")
 
-    System_Boundary(carsharing, "Carsharing Platform") {
-        Container(mobile_app, "Mobile App", "Flutter / Kotlin / Swift", "Приложение для поиска авто и управления арендой")
-        Container(web_admin, "Admin Web Portal", "React / Vue", "Панель управления автопарком")
-        Container(backend_api, "Backend API Service", "Go / Python / Java", "Основной сервер бизнес-логики и обработки аренд")
-        ContainerDb(database, "Relational Database", "PostgreSQL", "Хранение данных пользователей, авто, поездок и транзакций")
-        ContainerDb(redis, "In-Memory Cache", "Redis", "Кэширование геолокации и активных сессий")
+    System_Boundary(hotel_system, "Hotel Booking Platform") {
+        Container(web_app, "Web Portal", "React / Vue", "Пользовательский интерфейс для бронирования номеров")
+        Container(admin_panel, "Admin Web Portal", "React / Vue", "Панель управления отелем для администраторов")
+        Container(backend_api, "Backend API Service", "Go / Python / Java", "Основной сервер бизнес-логики, проверки доступности номеров и бронирования")
+        ContainerDb(database, "Relational Database", "PostgreSQL", "Хранение данных пользователей, номеров, услуг, бронирований и платежей")
+        ContainerDb(redis, "In-Memory Cache", "Redis", "Кэширование каталога номеров и сессий пользователей")
     }
 
-    System_Ext(payment_gw, "Payment Gateway", "YooKassa / Stripe", "Обработка платежей и холдирование средств")
-    System_Ext(telematics, "IoT Telematics System", "GPS Tracker / OBD-II", "Передача данных о пробеге и уровне топлива")
+    System_Ext(payment_gw, "Payment Gateway", "YooKassa / Stripe", "Обработка онлайн-оплаты бронирований")
+    System_Ext(email_service, "Email Notification Service", "SMTP / SendGrid", "Отправка подтверждений бронирования на почту")
 
-    Rel(driver, mobile_app, "Использует", "HTTPS")
-    Rel(operator, web_admin, "Использует", "HTTPS")
+    Rel(guest, web_app, "Использует", "HTTPS")
+    Rel(admin, admin_panel, "Использует", "HTTPS")
     
-    Rel(mobile_app, backend_api, "API запросы", "JSON/HTTPS")
-    Rel(web_admin, backend_api, "API запросы", "JSON/HTTPS")
+    Rel(web_app, backend_api, "API запросы", "JSON/HTTPS")
+    Rel(admin_panel, backend_api, "API запросы", "JSON/HTTPS")
     
     Rel(backend_api, database, "Чтение / Запись", "SQL/TCP")
     Rel(backend_api, redis, "Чтение / Запись", "RESP/TCP")
     
-    Rel(backend_api, payment_gw, "Холдирование и списывание", "JSON/HTTPS")
-    Rel(telematics, backend_api, "Телеметрия", "MQTT")
+    Rel(backend_api, payment_gw, "Проведение оплаты", "JSON/HTTPS")
+    Rel(backend_api, email_service, "Отправка уведомлений", "SMTP/HTTPS")
 ```
 
 ## ER-диаграмма базы данных (3NF)
@@ -60,92 +60,94 @@ erDiagram
         uuid id PK
         string role
         string full_name
+        string email
         string phone
-        string license_number
         datetime created_at
     }
 
-    VEHICLES {
+    ROOMS {
         uuid id PK
-        string license_plate
-        string make_model
+        string room_number
+        string category
+        decimal price_per_night
         string status
-        int fuel_level
-        int mileage
+        int capacity
     }
 
-    TARIFFS {
+    SERVICES {
         uuid id PK
         string name
-        decimal price_per_minute
-        decimal price_per_km
+        decimal price
+        string description
     }
 
-    RENTALS {
+    BOOKINGS {
         uuid id PK
         uuid user_id FK
-        uuid vehicle_id FK
-        uuid tariff_id FK
-        datetime start_time
-        datetime end_time
-        int start_mileage
-        int end_mileage
+        uuid room_id FK
+        uuid service_id FK
+        date check_in_date
+        date check_out_date
         decimal total_cost
         string status
     }
 
     PAYMENTS {
         uuid id PK
-        uuid user_id FK
-        uuid rental_id FK
+        uuid booking_id FK
         decimal amount
-        string type
+        string payment_method
         string status
-        datetime processed_at
+        datetime paid_at
     }
 
-    USERS ||--o{ RENTALS : "makes"
-    VEHICLES ||--o{ RENTALS : "involved_in"
-    TARIFFS ||--o{ RENTALS : "applied_to"
-    USERS ||--o{ PAYMENTS : "owns"
-    RENTALS ||--o{ PAYMENTS : "requires"
+    USERS ||--o{ BOOKINGS : "makes"
+    ROOMS ||--o{ BOOKINGS : "reserved_in"
+    SERVICES ||--o{ BOOKINGS : "included_in"
+    BOOKINGS ||--o{ PAYMENTS : "paid_by"
 ```
 
 ### Структура таблиц и ограничений
 
-1. **USERS**
-   - `id` (UUID, PK) — идентификатор пользователя.
-   - `role` (VARCHAR, NOT NULL) — роль в системе (DRIVER, OPERATOR).
-   - `phone` (VARCHAR, UNIQUE, NOT NULL) — телефон.
-   - `license_number` (VARCHAR, UNIQUE) — номер водительского удостоверения.
-   - Индексы: `phone`, `license_number`.
+1. **USERS (Пользователи)**
+   - `id` (UUID, Primary Key) — уникальный идентификатор.
+   - `role` (VARCHAR, NOT NULL) — роль в системе (GUEST, ADMIN).
+   - `full_name` (VARCHAR, NOT NULL) — ФИО пользователя.
+   - `email` (VARCHAR, UNIQUE, NOT NULL) — email для входа и уведомлений.
+   - `phone` (VARCHAR, UNIQUE, NOT NULL) — контактный телефон.
+   - Индексы: `email`, `phone`.
 
-2. **VEHICLES**
-   - `id` (UUID, PK) — идентификатор автомобиля.
-   - `license_plate` (VARCHAR, UNIQUE, NOT NULL) — регистрационный номер.
-   - `status` (VARCHAR, NOT NULL) — текущий статус (AVAILABLE, IN_USE, MAINTENANCE).
-   - `fuel_level` (INT, CHECK(fuel_level >= 0 AND fuel_level <= 100)) — процент топлива.
-   - `mileage` (INT, CHECK(mileage >= 0)) — пробег в километрах.
-   - Индексы: `status`.
+2. **ROOMS (Номера отеля)**
+   - `id` (UUID, Primary Key) — уникальный идентификатор номера.
+   - `room_number` (VARCHAR, UNIQUE, NOT NULL) — номер комнаты (например, "304").
+   - `category` (VARCHAR, NOT NULL) — категория (STANDARD, LUXE, SUITE).
+   - `price_per_night` (DECIMAL, CHECK(price_per_night > 0), NOT NULL) — цена за одну ночь.
+   - `status` (VARCHAR, NOT NULL) — статус номера (AVAILABLE, OCCUPIED, MAINTENANCE).
+   - `capacity` (INT, CHECK(capacity > 0), NOT NULL) — вместимость (кол-во гостей).
+   - Индексы: `status`, `category`.
 
-3. **TARIFFS**
-   - `id` (UUID, PK) — идентификатор тарифа.
-   - `name` (VARCHAR, UNIQUE, NOT NULL) — название тарифа.
-   - `price_per_minute` (DECIMAL, NOT NULL) — стоимость минуты аренды.
-   - `price_per_km` (DECIMAL, NOT NULL) — стоимость километра пробега.
+3. **SERVICES (Дополнительные услуги)**
+   - `id` (UUID, Primary Key) — уникальный идентификатор услуги.
+   - `name` (VARCHAR, UNIQUE, NOT NULL) — название услуги (Завтрак, Трансфер, СПА).
+   - `price` (DECIMAL, CHECK(price >= 0), NOT NULL) — стоимость услуги.
+   - `description` (TEXT) — описание услуги.
 
-4. **RENTALS**
-   - `id` (UUID, PK) — идентификатор аренды.
-   - `user_id` (UUID, FK -> USERS.id, NOT NULL) — арендатор.
-   - `vehicle_id` (UUID, FK -> VEHICLES.id, NOT NULL) — автомобиль.
-   - `tariff_id` (UUID, FK -> TARIFFS.id, NOT NULL) — применяемый тариф.
-   - `status` (VARCHAR, NOT NULL) — состояние аренды (ACTIVE, COMPLETED, CANCELED).
-   - Индексы: `user_id`, `vehicle_id`.
+4. **BOOKINGS (Бронирования)**
+   - `id` (UUID, Primary Key) — уникальный идентификатор брони.
+   - `user_id` (UUID, Foreign Key -> USERS.id, NOT NULL) — кто забронировал.
+   - `room_id` (UUID, Foreign Key -> ROOMS.id, NOT NULL) — забронированный номер.
+   - `service_id` (UUID, Foreign Key -> SERVICES.id, NULLable) — выбранная доп. услуга.
+   - `check_in_date` (DATE, NOT NULL) — дата заезда.
+   - `check_out_date` (DATE, CHECK(check_out_date > check_in_date), NOT NULL) — дата выезда.
+   - `total_cost` (DECIMAL, CHECK(total_cost >= 0), NOT NULL) — итоговая стоимость бронирования.
+   - `status` (VARCHAR, NOT NULL) — статус брони (PENDING, CONFIRMED, CANCELED).
+   - Индексы: `user_id`, `room_id`, `check_in_date`, `check_out_date`.
 
-5. **PAYMENTS**
-   - `id` (UUID, PK) — идентификатор транзакции.
-   - `user_id` (UUID, FK -> USERS.id, NOT NULL) — плательщик.
-   - `rental_id` (UUID, FK -> RENTALS.id, NULLable) — связанная аренда.
-   - `type` (VARCHAR, NOT NULL) — тип операции (DEPOSIT, PAYMENT, REFUND).
-   - `status` (VARCHAR, NOT NULL) — статус транзакции (PENDING, SUCCESS, FAILED).
-   - Индексы: `rental_id`.
+5. **PAYMENTS (Платежи)**
+   - `id` (UUID, Primary Key) — уникальный идентификатор платежа.
+   - `booking_id` (UUID, Foreign Key -> BOOKINGS.id, NOT NULL) — привязка к бронированию.
+   - `amount` (DECIMAL, CHECK(amount > 0), NOT NULL) — сумма платежа.
+   - `payment_method` (VARCHAR, NOT NULL) — способ оплаты (CARD, CASH).
+   - `status` (VARCHAR, NOT NULL) — статус оплаты (PENDING, COMPLETED, REFUNDED).
+   - `paid_at` (TIMESTAMP) — время проведения оплаты.
+   - Индексы: `booking_id`.
