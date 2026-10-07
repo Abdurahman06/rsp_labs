@@ -390,14 +390,14 @@ components:
       properties:
         roomNumber: { type: string }
         category: { $ref: '#/components/schemas/RoomCategory' }
-        pricePerNight: { type: number, format: double, exclusiveMinimum: true }
+        pricePerNight: { type: number, format: double, minimum: 0, exclusiveMinimum: true }
         capacity: { type: integer, minimum: 1 }
     UpdateRoomRequest:
       type: object
       minProperties: 1
       properties:
         category: { $ref: '#/components/schemas/RoomCategory' }
-        pricePerNight: { type: number, format: double, exclusiveMinimum: true }
+        pricePerNight: { type: number, format: double, minimum: 0, exclusiveMinimum: true }
         status: { $ref: '#/components/schemas/RoomStatus' }
         capacity: { type: integer, minimum: 1 }
     CreateBookingRequest:
@@ -459,3 +459,4 @@ components:
               issue: { type: string }
 security:
   - bearerAuth: []
+
