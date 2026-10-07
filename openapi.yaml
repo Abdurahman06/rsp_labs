@@ -1,0 +1,461 @@
+openapi: 3.0.3
+info:
+  title: City Hotels Booking API
+  version: 1.0.0
+  description: REST API для поиска отелей и бронирования номеров.
+servers:
+  - url: https://api.city-hotels.example.com
+    description: Production API
+tags:
+  - name: Auth
+  - name: Hotels
+  - name: Rooms
+  - name: Bookings
+  - name: Reviews
+paths:
+  /api/v1/auth/register:
+    post:
+      tags: [Auth]
+      summary: Регистрация пользователя
+      operationId: registerUser
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201':
+          description: Пользователь создан
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Вход в систему и получение JWT
+      operationId: loginUser
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Токен выдан
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/v1/hotels:
+    get:
+      tags: [Hotels]
+      summary: Поиск отелей
+      operationId: listHotels
+      security: []
+      parameters:
+        - { $ref: '#/components/parameters/City' }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+        - in: query
+          name: minRating
+          schema: { type: number, minimum: 0, maximum: 5 }
+        - in: query
+          name: maxPrice
+          description: Максимальная цена номера за ночь
+          schema: { type: number, format: double, minimum: 0 }
+      responses:
+        '200':
+          description: Страница отелей
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HotelListResponse' }
+    post:
+      tags: [Hotels]
+      summary: Зарегистрировать отель
+      operationId: createHotel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateHotelRequest' }
+      responses:
+        '201':
+          description: Отель создан
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Hotel' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /api/v1/hotels/{hotelId}:
+    parameters: [{ $ref: '#/components/parameters/HotelId' }]
+    get:
+      tags: [Hotels]
+      summary: Получить отель
+      operationId: getHotel
+      security: []
+      responses:
+        '200':
+          description: Карточка отеля
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Hotel' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Hotels]
+      summary: Изменить отель
+      operationId: updateHotel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateHotelRequest' }
+      responses:
+        '200':
+          description: Отель изменён
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Hotel' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/hotels/{hotelId}/rooms:
+    parameters: [{ $ref: '#/components/parameters/HotelId' }]
+    get:
+      tags: [Rooms]
+      summary: Получить номера отеля
+      operationId: listRooms
+      security: []
+      parameters:
+        - in: query
+          name: checkIn
+          schema: { type: string, format: date }
+        - in: query
+          name: checkOut
+          schema: { type: string, format: date }
+        - in: query
+          name: category
+          schema: { $ref: '#/components/schemas/RoomCategory' }
+      responses:
+        '200':
+          description: Список номеров
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Room' }
+    post:
+      tags: [Rooms]
+      summary: Добавить номер
+      operationId: createRoom
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateRoomRequest' }
+      responses:
+        '201':
+          description: Номер создан
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Room' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/rooms/{roomId}:
+    parameters: [{ $ref: '#/components/parameters/RoomId' }]
+    patch:
+      tags: [Rooms]
+      summary: Изменить номер
+      operationId: updateRoom
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateRoomRequest' }
+      responses:
+        '200':
+          description: Номер изменён
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Room' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/bookings:
+    get:
+      tags: [Bookings]
+      summary: Список бронирований пользователя
+      operationId: listBookings
+      parameters:
+        - in: query
+          name: status
+          schema: { $ref: '#/components/schemas/BookingStatus' }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: Бронирования
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BookingListResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Bookings]
+      summary: Создать бронирование
+      operationId: createBooking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateBookingRequest' }
+      responses:
+        '201':
+          description: Бронирование создано
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Booking' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /api/v1/bookings/{bookingId}:
+    parameters: [{ $ref: '#/components/parameters/BookingId' }]
+    get:
+      tags: [Bookings]
+      summary: Получить бронирование
+      operationId: getBooking
+      responses:
+        '200':
+          description: Бронирование
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Booking' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/bookings/{bookingId}/cancel:
+    post:
+      tags: [Bookings]
+      summary: Отменить бронирование
+      operationId: cancelBooking
+      parameters: [{ $ref: '#/components/parameters/BookingId' }]
+      responses:
+        '200':
+          description: Бронирование отменено
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Booking' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/hotels/{hotelId}/reviews:
+    parameters: [{ $ref: '#/components/parameters/HotelId' }]
+    get:
+      tags: [Reviews]
+      summary: Получить отзывы отеля
+      operationId: listReviews
+      security: []
+      responses:
+        '200':
+          description: Отзывы
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Review' }
+    post:
+      tags: [Reviews]
+      summary: Оставить отзыв
+      operationId: createReview
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateReviewRequest' }
+      responses:
+        '201':
+          description: Отзыв создан
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Review' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    HotelId: { in: path, name: hotelId, required: true, schema: { type: string, format: uuid } }
+    RoomId: { in: path, name: roomId, required: true, schema: { type: string, format: uuid } }
+    BookingId: { in: path, name: bookingId, required: true, schema: { type: string, format: uuid } }
+    City: { in: query, name: city, schema: { type: string, example: Симферополь } }
+    Page: { in: query, name: page, schema: { type: integer, minimum: 1, default: 1 } }
+    PageSize: { in: query, name: pageSize, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+  responses:
+    BadRequest: { description: Неверный запрос, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+    Unauthorized: { description: Требуется аутентификация, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+    Forbidden: { description: Недостаточно прав, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+    NotFound: { description: Ресурс не найден, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+    Conflict: { description: Конфликт состояния, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+    ValidationError: { description: Ошибка проверки полей, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [fullName, email, phone, password, role]
+      properties:
+        fullName: { type: string, minLength: 2, maxLength: 120 }
+        email: { type: string, format: email }
+        phone: { type: string, pattern: '^\\+[0-9]{10,15}$' }
+        password: { type: string, format: password, minLength: 8 }
+        role: { type: string, enum: [GUEST, MANAGER] }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, format: password }
+    AuthResponse:
+      type: object
+      required: [accessToken, tokenType, user]
+      properties:
+        accessToken: { type: string }
+        tokenType: { type: string, enum: [Bearer] }
+        user: { $ref: '#/components/schemas/User' }
+    User:
+      type: object
+      required: [id, fullName, email, role]
+      properties:
+        id: { type: string, format: uuid }
+        fullName: { type: string }
+        email: { type: string, format: email }
+        role: { type: string, enum: [GUEST, MANAGER] }
+    Hotel:
+      type: object
+      required: [id, name, city, address, rating]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string, maxLength: 160 }
+        city: { type: string }
+        address: { type: string }
+        description: { type: string }
+        rating: { type: number, format: double, minimum: 0, maximum: 5 }
+    CreateHotelRequest:
+      type: object
+      required: [name, city, address]
+      properties:
+        name: { type: string, maxLength: 160 }
+        city: { type: string }
+        address: { type: string }
+        description: { type: string }
+    UpdateHotelRequest:
+      type: object
+      minProperties: 1
+      properties:
+        name: { type: string, maxLength: 160 }
+        address: { type: string }
+        description: { type: string }
+    HotelListResponse:
+      type: object
+      required: [items, page, pageSize, total]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Hotel' } }
+        page: { type: integer }
+        pageSize: { type: integer }
+        total: { type: integer }
+    Room:
+      type: object
+      required: [id, hotelId, roomNumber, category, pricePerNight, status, capacity]
+      properties:
+        id: { type: string, format: uuid }
+        hotelId: { type: string, format: uuid }
+        roomNumber: { type: string }
+        category: { $ref: '#/components/schemas/RoomCategory' }
+        pricePerNight: { type: number, format: double, minimum: 0 }
+        status: { $ref: '#/components/schemas/RoomStatus' }
+        capacity: { type: integer, minimum: 1 }
+    RoomCategory: { type: string, enum: [STANDARD, LUXE, SUITE] }
+    RoomStatus: { type: string, enum: [AVAILABLE, OCCUPIED, MAINTENANCE] }
+    CreateRoomRequest:
+      type: object
+      required: [roomNumber, category, pricePerNight, capacity]
+      properties:
+        roomNumber: { type: string }
+        category: { $ref: '#/components/schemas/RoomCategory' }
+        pricePerNight: { type: number, format: double, exclusiveMinimum: true }
+        capacity: { type: integer, minimum: 1 }
+    UpdateRoomRequest:
+      type: object
+      minProperties: 1
+      properties:
+        category: { $ref: '#/components/schemas/RoomCategory' }
+        pricePerNight: { type: number, format: double, exclusiveMinimum: true }
+        status: { $ref: '#/components/schemas/RoomStatus' }
+        capacity: { type: integer, minimum: 1 }
+    CreateBookingRequest:
+      type: object
+      required: [roomId, checkInDate, checkOutDate]
+      properties:
+        roomId: { type: string, format: uuid }
+        checkInDate: { type: string, format: date }
+        checkOutDate: { type: string, format: date }
+        guests: { type: integer, minimum: 1, default: 1 }
+    Booking:
+      type: object
+      required: [id, userId, roomId, checkInDate, checkOutDate, totalCost, status]
+      properties:
+        id: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        roomId: { type: string, format: uuid }
+        checkInDate: { type: string, format: date }
+        checkOutDate: { type: string, format: date }
+        totalCost: { type: number, format: double, minimum: 0 }
+        status: { $ref: '#/components/schemas/BookingStatus' }
+    BookingStatus: { type: string, enum: [PENDING, CONFIRMED, CANCELED] }
+    BookingListResponse:
+      type: object
+      required: [items, page, pageSize, total]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Booking' } }
+        page: { type: integer }
+        pageSize: { type: integer }
+        total: { type: integer }
+    CreateReviewRequest:
+      type: object
+      required: [rating, comment]
+      properties:
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        comment: { type: string, minLength: 1, maxLength: 2000 }
+    Review:
+      type: object
+      required: [id, userId, hotelId, rating, comment, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        hotelId: { type: string, format: uuid }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        comment: { type: string }
+        createdAt: { type: string, format: date-time }
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string, example: ROOM_NOT_AVAILABLE }
+        message: { type: string, example: Номер занят на выбранные даты }
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              issue: { type: string }
+security:
+  - bearerAuth: []
