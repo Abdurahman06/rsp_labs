@@ -1,0 +1,20 @@
+# Environment configuration
+.env
+.env.local
+
+# Python dependencies and generated files
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
+
+# IDE and OS files
+.idea/
+.vscode/
+.DS_Store
+
+# Local logs
+*.log
