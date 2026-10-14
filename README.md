@@ -28,3 +28,4 @@ docker run --rm --name city-hotels-api -p 8080:8080 `
 curl http://127.0.0.1:8080/health
 docker inspect --format='{{json .State.Health}}' city-hotels-api
 ```
+
