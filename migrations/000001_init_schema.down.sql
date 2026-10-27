@@ -1,0 +1,7 @@
+BEGIN;
+DROP TABLE reviews;
+DROP TABLE bookings;
+DROP TABLE rooms;
+DROP TABLE hotels;
+DROP TABLE users;
+COMMIT;

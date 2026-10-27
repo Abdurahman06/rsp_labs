@@ -1,25 +1,20 @@
-"""Domain/service layer for the health use case."""
-
-from __future__ import annotations
-
-import time
-
+from time import monotonic
 from internal.config.settings import Settings
-from internal.repository.health_repository import RuntimeHealthRepository
+from internal.repository.health_repository import HealthRepository
 
 
 class HealthService:
-    def __init__(self, settings: Settings, repository: RuntimeHealthRepository) -> None:
-        self._settings = settings
-        self._repository = repository
-        self._started_at = time.monotonic()
+    def __init__(self, settings: Settings, repository: HealthRepository):
+        self.settings = settings
+        self.repository = repository
+        self.started_at = monotonic()
 
     def get_status(self) -> dict:
-        """Return service status without exposing transport or database details."""
+        available = self.repository.is_available()
         return {
-            "status": "ok",
-            "service": self._settings.name,
-            "version": self._settings.version,
-            "uptime_seconds": round(time.monotonic() - self._started_at, 3),
-            "dependencies": self._repository.check(),
+            "status": "ok" if available else "unavailable",
+            "db": "up" if available else "down",
+            "service": self.settings.name,
+            "version": self.settings.version,
+            "uptime_seconds": round(monotonic() - self.started_at, 3),
         }

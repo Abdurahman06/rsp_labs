@@ -1,45 +1,55 @@
-"""Application entry point for the City Hotels Booking API."""
-
-from __future__ import annotations
-
+"""Composition root: configuration -> pool -> repository -> service -> HTTP."""
+import logging
+import signal
 import sys
 from pathlib import Path
+from threading import Event
+from http.server import ThreadingHTTPServer
 
-# Allow `python cmd/app/main.py` as well as `python -m cmd.app.main`.
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from internal.config.settings import Settings  # noqa: E402
-from internal.controller.health_handler import HealthHandler  # noqa: E402
-from internal.repository.health_repository import RuntimeHealthRepository  # noqa: E402
-from internal.service.health_service import HealthService  # noqa: E402
+from internal.config.settings import Settings
+from internal.database.postgres import connect
+from internal.controller.health_handler import HealthHandler
+from internal.repository.health_repository import PostgresHealthRepository
+from internal.service.health_service import HealthService
 
 
-def create_server(settings: Settings):
-    """Build the HTTP server and wire the layers together."""
-    from http.server import ThreadingHTTPServer
-
-    repository = RuntimeHealthRepository(settings)
-    service = HealthService(settings, repository)
+def create_server(settings, pool):
+    service = HealthService(settings, PostgresHealthRepository(pool))
 
     class RequestHandler(HealthHandler):
         health_service = service
 
-    return ThreadingHTTPServer((settings.host, settings.port), RequestHandler)
+    server = ThreadingHTTPServer((settings.host, settings.port), RequestHandler)
+    server.daemon_threads = False
+    server.timeout = 0.5
+    return server
 
 
-def main() -> None:
-    settings = Settings.from_environment(PROJECT_ROOT / ".env")
-    server = create_server(settings)
-    print(f"{settings.name} listening on http://{settings.host}:{settings.port}")
+def main() -> int:
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    stop = Event()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, lambda *_: stop.set())
     try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        print("\nStopping server")
+        settings = Settings.from_environment(PROJECT_ROOT / ".env")
+        pool = connect(settings, stop)
+    except (ValueError, RuntimeError) as exc:
+        logging.error("Startup: %s", exc)
+        return 1
+    try:
+        with create_server(settings, pool) as server:
+            logging.info("%s listening on %s:%s", settings.name, settings.host, settings.port)
+            while not stop.is_set():
+                server.handle_request()
     finally:
-        server.server_close()
+        pool.close()
+        logging.info("HTTP server and database pool closed")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

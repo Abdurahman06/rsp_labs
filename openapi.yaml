@@ -25,6 +25,11 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/HealthResponse' }
+        '503':
+          description: PostgreSQL недоступен
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HealthResponse' }
   /api/v1/auth/register:
     post:
       tags: [Auth]
@@ -324,7 +329,8 @@ components:
       type: object
       required: [status, service, version, uptime_seconds]
       properties:
-        status: { type: string, enum: [ok] }
+        status: { type: string, enum: [ok, unavailable] }
+        db: { type: string, enum: [up, down] }
         service: { type: string }
         version: { type: string }
         uptime_seconds: { type: number, format: double, minimum: 0 }

@@ -9,6 +9,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     APP_PORT=8080
 
 # The application has no third-party dependencies; copy only runtime source.
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 COPY cmd/ ./cmd/
 COPY internal/ ./internal/
 

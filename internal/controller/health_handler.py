@@ -14,7 +14,7 @@ class HealthHandler(BaseHTTPRequestHandler):
             self._write_json(404, {"error": "not_found", "message": "Endpoint not found"})
             return
         payload = self.health_service.get_status()
-        self._write_json(200, payload)
+        self._write_json(200 if payload["status"] == "ok" else 503, payload)
 
     def _write_json(self, status: int, payload: dict) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")

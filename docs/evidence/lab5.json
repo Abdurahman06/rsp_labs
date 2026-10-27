@@ -1,0 +1,200 @@
+[
+  {
+    "check": "Compose services",
+    "command": "docker compose ps -a",
+    "exit_code": 0,
+    "output": "NAME              IMAGE                     COMMAND                  SERVICE   CREATED          STATUS                      PORTS\nlab_5-app-1       lab_5-app                 \"python -m cmd.app.m…\"   app       26 seconds ago   Up 19 seconds (healthy)     127.0.0.1:8085->8080/tcp\nlab_5-db-1        postgres:16-alpine        \"docker-entrypoint.s…\"   db        26 seconds ago   Up 26 seconds (healthy)     127.0.0.1:5435->5432/tcp\nlab_5-migrate-1   migrate/migrate:v4.18.1   \"migrate -path=/migr…\"   migrate   26 seconds ago   Exited (0) 19 seconds ago   \n"
+  },
+  {
+    "check": "Migration log",
+    "command": "docker compose logs --no-color migrate",
+    "exit_code": 0,
+    "output": "migrate-1  | no change\n"
+  },
+  {
+    "check": "Tables",
+    "command": "docker compose exec -T db psql -U hotel_app -d hotels -v ON_ERROR_STOP=1 -c \\dt",
+    "exit_code": 0,
+    "output": "               List of relations\n Schema |       Name        | Type  |   Owner   \n--------+-------------------+-------+-----------\n public | bookings          | table | hotel_app\n public | hotels            | table | hotel_app\n public | reviews           | table | hotel_app\n public | rooms             | table | hotel_app\n public | schema_migrations | table | hotel_app\n public | users             | table | hotel_app\n(6 rows)\n\n"
+  },
+  {
+    "check": "Migration version",
+    "command": "docker compose exec -T db psql -U hotel_app -d hotels -v ON_ERROR_STOP=1 -c \"SELECT version, dirty FROM schema_migrations;\"",
+    "exit_code": 0,
+    "output": " version | dirty \n---------+-------\n       1 | f\n(1 row)\n\n"
+  },
+  {
+    "check": "/health 200",
+    "command": "GET /health",
+    "exit_code": 0,
+    "output": "200 {\"status\": \"ok\", \"db\": \"up\", \"service\": \"City Hotels Booking API\", \"version\": \"0.5.0\", \"uptime_seconds\": 19.458}"
+  },
+  {
+    "check": "Stop database",
+    "command": "docker compose stop db",
+    "exit_code": 0,
+    "output": " Container lab_5-db-1  Stopping\n Container lab_5-db-1  Stopped\n"
+  },
+  {
+    "check": "/health 503",
+    "command": "GET /health",
+    "exit_code": 0,
+    "output": "503 {\"status\": \"unavailable\", \"db\": \"down\", \"service\": \"City Hotels Booking API\", \"version\": \"0.5.0\", \"uptime_seconds\": 22.312}"
+  },
+  {
+    "check": "Start database",
+    "command": "docker compose start db",
+    "exit_code": 0,
+    "output": " Container lab_5-db-1  Starting\n Container lab_5-db-1  Started\n"
+  },
+  {
+    "check": "/health 200",
+    "command": "GET /health",
+    "exit_code": 0,
+    "output": "200 {\"status\": \"ok\", \"db\": \"up\", \"service\": \"City Hotels Booking API\", \"version\": \"0.5.0\", \"uptime_seconds\": 24.336}"
+  },
+  {
+    "check": "Insert persistence marker",
+    "command": "docker compose exec -T db psql -U hotel_app -d hotels -v ON_ERROR_STOP=1 -c \"INSERT INTO hotels(name,city,address) VALUES ('persistence-cf153ce79651472695a4300b1285e8ff','Test City','Test Street');\"",
+    "exit_code": 0,
+    "output": "INSERT 0 1\n"
+  },
+  {
+    "check": "Remove containers, keep volume",
+    "command": "docker compose down",
+    "exit_code": 0,
+    "output": " Container lab_5-app-1  Stopping\n Container lab_5-app-1  Stopped\n Container lab_5-app-1  Removing\n Container lab_5-app-1  Removed\n Container lab_5-migrate-1  Stopping\n Container lab_5-migrate-1  Stopped\n Container lab_5-migrate-1  Removing\n Container lab_5-migrate-1  Removed\n Container lab_5-db-1  Stopping\n Container lab_5-db-1  Stopped\n Container lab_5-db-1  Removing\n Container lab_5-db-1  Removed\n Network lab_5_default  Removing\n Network lab_5_default  Removed\n"
+  },
+  {
+    "check": "Recreate containers",
+    "command": "docker compose up -d",
+    "exit_code": 0,
+    "output": " Network lab_5_default  Creating\n Network lab_5_default  Created\n Container lab_5-db-1  Creating\n Container lab_5-db-1  Created\n Container lab_5-migrate-1  Creating\n Container lab_5-migrate-1  Created\n Container lab_5-app-1  Creating\n Container lab_5-app-1  Created\n Container lab_5-db-1  Starting\n Container lab_5-db-1  Started\n Container lab_5-db-1  Waiting\n Container lab_5-db-1  Healthy\n Container lab_5-migrate-1  Starting\n Container lab_5-migrate-1  Started\n Container lab_5-db-1  Waiting\n Container lab_5-migrate-1  Waiting\n Container lab_5-db-1  Healthy\n Container lab_5-migrate-1  Exited\n Container lab_5-app-1  Starting\n Container lab_5-app-1  Started\n"
+  },
+  {
+    "check": "/health 200",
+    "command": "GET /health",
+    "exit_code": 0,
+    "output": "200 {\"status\": \"ok\", \"db\": \"up\", \"service\": \"City Hotels Booking API\", \"version\": \"0.5.0\", \"uptime_seconds\": 0.464}"
+  },
+  {
+    "check": "Data survived container recreation",
+    "command": "docker compose exec -T db psql -U hotel_app -d hotels -v ON_ERROR_STOP=1 -c \"SELECT name FROM hotels WHERE name='persistence-cf153ce79651472695a4300b1285e8ff';\"",
+    "exit_code": 0,
+    "output": "                     name                     \n----------------------------------------------\n persistence-cf153ce79651472695a4300b1285e8ff\n(1 row)\n\n"
+  },
+  {
+    "check": "Remove own persistence marker",
+    "command": "docker compose exec -T db psql -U hotel_app -d hotels -v ON_ERROR_STOP=1 -c \"DELETE FROM hotels WHERE name='persistence-cf153ce79651472695a4300b1285e8ff';\"",
+    "exit_code": 0,
+    "output": "DELETE 1\n"
+  },
+  {
+    "check": "Create isolated verification database",
+    "command": "docker compose exec -T db psql -U hotel_app -d hotels -v ON_ERROR_STOP=1 -c \"CREATE DATABASE lab5_verify_dc255872c711;\"",
+    "exit_code": 0,
+    "output": "CREATE DATABASE\n"
+  },
+  {
+    "check": "Apply isolated migration",
+    "command": "docker compose run --no-deps --rm migrate up",
+    "exit_code": 0,
+    "output": "1/u init_schema (86.291278ms)\n"
+  },
+  {
+    "check": "Isolated tables before rollback",
+    "command": "docker compose exec -T db psql -U hotel_app -d lab5_verify_dc255872c711 -v ON_ERROR_STOP=1 -c \\dt",
+    "exit_code": 0,
+    "output": "               List of relations\n Schema |       Name        | Type  |   Owner   \n--------+-------------------+-------+-----------\n public | bookings          | table | hotel_app\n public | hotels            | table | hotel_app\n public | reviews           | table | hotel_app\n public | rooms             | table | hotel_app\n public | schema_migrations | table | hotel_app\n public | users             | table | hotel_app\n(6 rows)\n\n"
+  },
+  {
+    "check": "Seed isolated hotel",
+    "command": "docker compose exec -T db psql -U hotel_app -d lab5_verify_dc255872c711 -v ON_ERROR_STOP=1 -c \"INSERT INTO hotels(id,name,city,address) VALUES ('00000000-0000-0000-0000-000000000001','Test Hotel','Test City','Street');\"",
+    "exit_code": 0,
+    "output": "INSERT 0 1\n"
+  },
+  {
+    "check": "Valid room",
+    "command": "docker compose exec -T db psql -U hotel_app -d lab5_verify_dc255872c711 -v ON_ERROR_STOP=1 -c \"INSERT INTO rooms(hotel_id,room_number,category,price_per_night,capacity) VALUES ('00000000-0000-0000-0000-000000000001','101','STANDARD',3000.50,2);\"",
+    "exit_code": 0,
+    "output": "INSERT 0 1\n"
+  },
+  {
+    "check": "Negative price rejected (CHECK)",
+    "command": "docker compose exec -T db psql -U hotel_app -d lab5_verify_dc255872c711 -v ON_ERROR_STOP=1 -c \"INSERT INTO rooms(hotel_id,room_number,category,price_per_night,capacity) VALUES ('00000000-0000-0000-0000-000000000001','102','STANDARD',-1,2);\"",
+    "exit_code": 1,
+    "output": "ERROR:  new row for relation \"rooms\" violates check constraint \"rooms_price_per_night_check\"\nDETAIL:  Failing row contains (2649d158-e4b1-4045-86d5-989bfda6e390, 00000000-0000-0000-0000-000000000001, 102, STANDARD, -1.00, AVAILABLE, 2, 2026-10-27 21:48:36.62399+00).\n\n"
+  },
+  {
+    "check": "Missing hotel rejected (FK)",
+    "command": "docker compose exec -T db psql -U hotel_app -d lab5_verify_dc255872c711 -v ON_ERROR_STOP=1 -c \"INSERT INTO rooms(hotel_id,room_number,category,price_per_night,capacity) VALUES ('00000000-0000-0000-0000-000000000002','102','STANDARD',1,2);\"",
+    "exit_code": 1,
+    "output": "ERROR:  insert or update on table \"rooms\" violates foreign key constraint \"rooms_hotel_id_fkey\"\nDETAIL:  Key (hotel_id)=(00000000-0000-0000-0000-000000000002) is not present in table \"hotels\".\n\n"
+  },
+  {
+    "check": "Duplicate room rejected (UNIQUE)",
+    "command": "docker compose exec -T db psql -U hotel_app -d lab5_verify_dc255872c711 -v ON_ERROR_STOP=1 -c \"INSERT INTO rooms(hotel_id,room_number,category,price_per_night,capacity) VALUES ('00000000-0000-0000-0000-000000000001','101','STANDARD',1,2);\"",
+    "exit_code": 1,
+    "output": "ERROR:  duplicate key value violates unique constraint \"rooms_hotel_id_room_number_key\"\nDETAIL:  Key (hotel_id, room_number)=(00000000-0000-0000-0000-000000000001, 101) already exists.\n\n"
+  },
+  {
+    "check": "Rollback isolated migration",
+    "command": "docker compose run --no-deps --rm migrate down 1",
+    "exit_code": 0,
+    "output": "1/d init_schema (37.976505ms)\n"
+  },
+  {
+    "check": "Tables after rollback",
+    "command": "docker compose exec -T db psql -U hotel_app -d lab5_verify_dc255872c711 -v ON_ERROR_STOP=1 -c \\dt",
+    "exit_code": 0,
+    "output": "               List of relations\n Schema |       Name        | Type  |   Owner   \n--------+-------------------+-------+-----------\n public | schema_migrations | table | hotel_app\n(1 row)\n\n"
+  },
+  {
+    "check": "Reapply isolated migration",
+    "command": "docker compose run --no-deps --rm migrate up",
+    "exit_code": 0,
+    "output": "1/u init_schema (77.212839ms)\n"
+  },
+  {
+    "check": "Tables after reapply",
+    "command": "docker compose exec -T db psql -U hotel_app -d lab5_verify_dc255872c711 -v ON_ERROR_STOP=1 -c \\dt",
+    "exit_code": 0,
+    "output": "               List of relations\n Schema |       Name        | Type  |   Owner   \n--------+-------------------+-------+-----------\n public | bookings          | table | hotel_app\n public | hotels            | table | hotel_app\n public | reviews           | table | hotel_app\n public | rooms             | table | hotel_app\n public | schema_migrations | table | hotel_app\n public | users             | table | hotel_app\n(6 rows)\n\n"
+  },
+  {
+    "check": "Repeat migration is safe",
+    "command": "docker compose run --no-deps --rm migrate up",
+    "exit_code": 0,
+    "output": "no change\n"
+  },
+  {
+    "check": "Missing configuration rejected",
+    "command": "docker compose run --no-deps --rm -e DB_PASSWORD= app python -m cmd.app.main",
+    "exit_code": 1,
+    "output": "2026-10-27 21:48:41,634 ERROR Startup: Required environment variable DB_PASSWORD is not set\n\n"
+  },
+  {
+    "check": "Startup retries",
+    "command": "docker compose run --no-deps --rm app python -c \"from dataclasses import replace; from internal.config.settings import Settings; from internal.database.postgres import connect; connect(replace(Settings.from_environment(),db_host='127.0.0.1',db_port=1),attempts=2)\"",
+    "exit_code": 1,
+    "output": "error connecting in 'pool-1': connection failed: connection to server at \"127.0.0.1\", port 1 failed: Connection refused\n\tIs the server running on that host and accepting TCP/IP connections?\nerror connecting in 'pool-1': connection failed: connection to server at \"127.0.0.1\", port 1 failed: Connection refused\n\tIs the server running on that host and accepting TCP/IP connections?\nDatabase connection attempt 1/2 failed\nerror connecting in 'pool-2': connection failed: connection to server at \"127.0.0.1\", port 1 failed: Connection refused\n\tIs the server running on that host and accepting TCP/IP connections?\nerror connecting in 'pool-2': connection failed: connection to server at \"127.0.0.1\", port 1 failed: Connection refused\n\tIs the server running on that host and accepting TCP/IP connections?\nerror connecting in 'pool-2': connection failed: connection to server at \"127.0.0.1\", port 1 failed: Connection refused\n\tIs the server running on that host and accepting TCP/IP connections?\nDatabase connection attempt 2/2 failed\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n  File \"/app/internal/database/postgres.py\", line 40, in connect\n    raise RuntimeError(f\"Database unavailable after {attempts} attempts\")\nRuntimeError: Database unavailable after 2 attempts\n\n"
+  },
+  {
+    "check": "Final service status",
+    "command": "docker compose ps -a",
+    "exit_code": 0,
+    "output": "NAME              IMAGE                     COMMAND                  SERVICE   CREATED          STATUS                      PORTS\nlab_5-app-1       lab_5-app                 \"python -m cmd.app.m…\"   app       25 seconds ago   Up 18 seconds (healthy)     127.0.0.1:8085->8080/tcp\nlab_5-db-1        postgres:16-alpine        \"docker-entrypoint.s…\"   db        25 seconds ago   Up 24 seconds (healthy)     127.0.0.1:5435->5432/tcp\nlab_5-migrate-1   migrate/migrate:v4.18.1   \"migrate -path=/migr…\"   migrate   25 seconds ago   Exited (0) 18 seconds ago   \n"
+  },
+  {
+    "check": "Restore database after verification",
+    "command": "docker compose start db",
+    "exit_code": 0,
+    "output": ""
+  },
+  {
+    "check": "Remove only the temporary verification database",
+    "command": "docker compose exec -T db psql -U hotel_app -d hotels -v ON_ERROR_STOP=1 -c \"DROP DATABASE lab5_verify_dc255872c711;\"",
+    "exit_code": 0,
+    "output": "DROP DATABASE\n"
+  }
+]
