@@ -21,7 +21,8 @@ for name, checks in groups:
     lines = ["Actual command output / lab " + str(number), ""]
     for record in records:
         if record["check"] in checks:
-            lines.extend([record["check"], "$ " + record["command"]])
+            lines.append(record["check"])
+            lines.extend(textwrap.wrap("$ " + record["command"], 120, replace_whitespace=False, drop_whitespace=False))
             for line in record["output"].splitlines():
                 lines.extend(textwrap.wrap(line, 120, replace_whitespace=False, drop_whitespace=False) or [""])
             lines.append("")

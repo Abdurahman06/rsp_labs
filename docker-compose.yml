@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
       POSTGRES_DB: ${DB_NAME:?Set DB_NAME in .env}
     ports:
-      - "127.0.0.1:${DB_HOST_PORT:-5435}:5432"
+      - "127.0.0.1:${DB_HOST_PORT:-5436}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -33,11 +33,11 @@ services:
     build: .
     restart: unless-stopped
     ports:
-      - "127.0.0.1:${HTTP_PORT:-8085}:8080"
+      - "127.0.0.1:${HTTP_PORT:-8086}:8080"
     environment:
       APP_HOST: 0.0.0.0
       APP_PORT: 8080
-      APP_VERSION: 0.5.0
+      APP_VERSION: 0.6.0
       DB_HOST: db
       DB_PORT: 5432
       DB_USER: ${DB_USER}

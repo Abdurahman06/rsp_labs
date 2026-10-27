@@ -49,9 +49,9 @@ class Settings:
             _load_dotenv(dotenv_path)
         return cls(
             name=os.getenv("APP_NAME", "City Hotels Booking API"),
-            version=os.getenv("APP_VERSION", "0.5.0"),
+            version=os.getenv("APP_VERSION", "0.6.0"),
             host=os.getenv("APP_HOST", "127.0.0.1"),
-            port=_integer("APP_PORT", "8085", 1, 65535),
+            port=_integer("APP_PORT", "8086", 1, 65535),
             db_host=_required("DB_HOST"),
             db_port=_integer("DB_PORT", "5432", 1, 65535),
             db_user=_required("DB_USER"),

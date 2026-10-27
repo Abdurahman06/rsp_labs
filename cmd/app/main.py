@@ -12,20 +12,28 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from internal.config.settings import Settings
 from internal.database.postgres import connect
-from internal.controller.health_handler import HealthHandler
+from internal.controller.lab6_handler import Lab6Handler
+from internal.repository.postgres.uow import PostgresRepositories, PostgresUnitOfWork
+from internal.service.catalog_service import CatalogService
+from internal.service.booking_service import BookingService
 from internal.repository.health_repository import PostgresHealthRepository
 from internal.service.health_service import HealthService
 
 
 def create_server(settings, pool):
     service = HealthService(settings, PostgresHealthRepository(pool))
+    repos = PostgresRepositories.from_source(pool)
+    catalog = CatalogService(repos.users, repos.hotels, repos.rooms, repos.bookings)
+    booking = BookingService(PostgresUnitOfWork(pool))
 
-    class RequestHandler(HealthHandler):
+    class RequestHandler(Lab6Handler):
         health_service = service
+        catalog_service = catalog
 
     server = ThreadingHTTPServer((settings.host, settings.port), RequestHandler)
     server.daemon_threads = False
     server.timeout = 0.5
+    server.booking_service = booking
     return server
 
 

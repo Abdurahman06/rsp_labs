@@ -1,0 +1,38 @@
+[
+  {
+    "check": "Create isolated test database",
+    "command": "docker compose exec -T db psql -U hotel_app -d hotels -v ON_ERROR_STOP=1 -c \"CREATE DATABASE lab6_test_ea8f7f69ecab;\"",
+    "exit_code": 0,
+    "output": "CREATE DATABASE\n"
+  },
+  {
+    "check": "Apply test migration",
+    "command": "docker compose run --no-deps --rm migrate up",
+    "exit_code": 0,
+    "output": "1/u init_schema (73.525603ms)\n"
+  },
+  {
+    "check": "Integration tests",
+    "command": "docker compose run --no-deps --rm -v D:\\Документы\\РСП\\Lab_6\\tests:/app/tests:ro app python -m unittest discover -s tests -v",
+    "exit_code": 0,
+    "output": "test_adjacent_dates_and_canceled_booking (test_repositories.RepositoryIntegrationTests.test_adjacent_dates_and_canceled_booking) ... ok\ntest_check_null_and_invalid_uuid_mapping (test_repositories.RepositoryIntegrationTests.test_check_null_and_invalid_uuid_mapping) ... ok\ntest_concurrent_overlapping_bookings_only_one_succeeds (test_repositories.RepositoryIntegrationTests.test_concurrent_overlapping_bookings_only_one_succeeds) ... ok\ntest_create_and_read_all_four_entities (test_repositories.RepositoryIntegrationTests.test_create_and_read_all_four_entities) ... ok\ntest_database_generates_identity_and_timestamp (test_repositories.RepositoryIntegrationTests.test_database_generates_identity_and_timestamp) ... ok\ntest_decimal_exactness_and_private_json (test_repositories.RepositoryIntegrationTests.test_decimal_exactness_and_private_json) ... ok\ntest_delete_and_subsequent_read_for_all_entities (test_repositories.RepositoryIntegrationTests.test_delete_and_subsequent_read_for_all_entities) ... ok\ntest_duplicate_email_and_room_number (test_repositories.RepositoryIntegrationTests.test_duplicate_email_and_room_number) ... ok\ntest_foreign_key_errors_and_delete_restrict (test_repositories.RepositoryIntegrationTests.test_foreign_key_errors_and_delete_restrict) ... ok\ntest_http_demo_maps_data_and_domain_errors (test_repositories.RepositoryIntegrationTests.test_http_demo_maps_data_and_domain_errors) ... ok\ntest_invalid_dates_and_unavailable_room (test_repositories.RepositoryIntegrationTests.test_invalid_dates_and_unavailable_room) ... ok\ntest_missing_read_for_all_repositories (test_repositories.RepositoryIntegrationTests.test_missing_read_for_all_repositories) ... ok\ntest_pagination_for_all_repositories (test_repositories.RepositoryIntegrationTests.test_pagination_for_all_repositories) ... ok\ntest_pagination_upper_limit_and_invalid_arguments (test_repositories.RepositoryIntegrationTests.test_pagination_upper_limit_and_invalid_arguments) ... ok\ntest_room_update_and_missing_update (test_repositories.RepositoryIntegrationTests.test_room_update_and_missing_update) ... ok\ntest_sql_injection_is_literal_email (test_repositories.RepositoryIntegrationTests.test_sql_injection_is_literal_email) ... ok\ntest_transaction_commit_and_overlap_rejected (test_repositories.RepositoryIntegrationTests.test_transaction_commit_and_overlap_rejected) ... ok\ntest_transaction_rolls_back_all_changes (test_repositories.RepositoryIntegrationTests.test_transaction_rolls_back_all_changes) ... ok\ntest_unexpected_db_error_preserves_cause (test_repositories.RepositoryIntegrationTests.test_unexpected_db_error_preserves_cause) ... ok\n\n----------------------------------------------------------------------\nRan 19 tests in 1.871s\n\nOK\n"
+  },
+  {
+    "check": "Booking demonstration",
+    "command": "docker compose run --no-deps --rm -v D:\\Документы\\РСП\\Lab_6\\scripts:/app/scripts:ro app python -m scripts.demo_booking",
+    "exit_code": 0,
+    "output": "CREATED: room 101, two nights at 3000.50 = 6001.00\n{\n  \"id\": \"da126d55-b2b1-48ee-b8e3-d33c7ee28489\",\n  \"created_at\": \"2026-10-27T21:51:56.717120+00:00\",\n  \"user_id\": \"1d6f2268-d68b-4a39-b923-b248ad87da55\",\n  \"room_id\": \"900401a7-f0c5-4815-9939-14c7a22c2a2d\",\n  \"check_in_date\": \"2027-03-10\",\n  \"check_out_date\": \"2027-03-12\",\n  \"total_cost\": \"6001.00\",\n  \"status\": \"CONFIRMED\"\n}\nOVERLAP REJECTED: Room is already booked for these dates\nUSER JSON (password hash excluded): {\"id\": \"1d6f2268-d68b-4a39-b923-b248ad87da55\", \"created_at\": \"2026-10-27T21:51:56.703384+00:00\", \"full_name\": \"Demo Guest\", \"email\": \"demo@example.test\", \"role\": \"GUEST\", \"phone\": null}\n"
+  },
+  {
+    "check": "Final service status",
+    "command": "docker compose ps -a",
+    "exit_code": 0,
+    "output": "NAME              IMAGE                     COMMAND                  SERVICE   CREATED          STATUS                      PORTS\nlab_6-app-1       lab_6-app                 \"python -m cmd.app.m…\"   app       59 seconds ago   Up 52 seconds (healthy)     127.0.0.1:8086->8080/tcp\nlab_6-db-1        postgres:16-alpine        \"docker-entrypoint.s…\"   db        59 seconds ago   Up 59 seconds (healthy)     127.0.0.1:5436->5432/tcp\nlab_6-migrate-1   migrate/migrate:v4.18.1   \"migrate -path=/migr…\"   migrate   59 seconds ago   Exited (0) 52 seconds ago   \n"
+  },
+  {
+    "check": "Remove only the temporary test database",
+    "command": "docker compose exec -T db psql -U hotel_app -d hotels -v ON_ERROR_STOP=1 -c \"DROP DATABASE lab6_test_ea8f7f69ecab;\"",
+    "exit_code": 0,
+    "output": "DROP DATABASE\n"
+  }
+]
