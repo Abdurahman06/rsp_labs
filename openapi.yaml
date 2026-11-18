@@ -75,8 +75,8 @@ paths:
       security: []
       parameters:
         - { $ref: '#/components/parameters/City' }
-        - { $ref: '#/components/parameters/Page' }
-        - { $ref: '#/components/parameters/PageSize' }
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Offset' }
         - in: query
           name: minRating
           schema: { type: number, minimum: 0, maximum: 5 }
@@ -86,10 +86,12 @@ paths:
           schema: { type: number, format: double, minimum: 0 }
       responses:
         '200':
-          description: Страница отелей
+          description: Список отелей с ограничением и смещением
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/HotelListResponse' }
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Hotel' }
     post:
       tags: [Hotels]
       summary: Зарегистрировать отель
@@ -122,9 +124,9 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Hotel' }
         '404': { $ref: '#/components/responses/NotFound' }
-    patch:
+    put:
       tags: [Hotels]
-      summary: Изменить отель
+      summary: Полностью изменить отель
       operationId: updateHotel
       requestBody:
         required: true
@@ -140,6 +142,14 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Hotels]
+      summary: Удалить отель
+      operationId: deleteHotel
+      responses:
+        '204': { description: Отель удалён }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
   /api/v1/hotels/{hotelId}/rooms:
     parameters: [{ $ref: '#/components/parameters/HotelId' }]
     get:
@@ -314,6 +324,8 @@ components:
     HotelId: { in: path, name: hotelId, required: true, schema: { type: string, format: uuid } }
     RoomId: { in: path, name: roomId, required: true, schema: { type: string, format: uuid } }
     BookingId: { in: path, name: bookingId, required: true, schema: { type: string, format: uuid } }
+    Limit: { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+    Offset: { in: query, name: offset, schema: { type: integer, minimum: 0, default: 0 } }
     City: { in: query, name: city, schema: { type: string, example: Симферополь } }
     Page: { in: query, name: page, schema: { type: integer, minimum: 1, default: 1 } }
     PageSize: { in: query, name: pageSize, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
@@ -384,13 +396,16 @@ components:
         name: { type: string, maxLength: 160 }
         city: { type: string }
         address: { type: string }
+        rating: { type: number, format: double, minimum: 0, maximum: 5, default: 0 }
         description: { type: string }
     UpdateHotelRequest:
       type: object
-      minProperties: 1
+      required: [name, city, address]
       properties:
         name: { type: string, maxLength: 160 }
+        city: { type: string }
         address: { type: string }
+        rating: { type: number, format: double, minimum: 0, maximum: 5 }
         description: { type: string }
     HotelListResponse:
       type: object
@@ -431,8 +446,9 @@ components:
         capacity: { type: integer, minimum: 1 }
     CreateBookingRequest:
       type: object
-      required: [roomId, checkInDate, checkOutDate]
+      required: [userId, roomId, checkInDate, checkOutDate]
       properties:
+        userId: { type: string, format: uuid }
         roomId: { type: string, format: uuid }
         checkInDate: { type: string, format: date }
         checkOutDate: { type: string, format: date }

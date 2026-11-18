@@ -20,7 +20,7 @@ class UserRepository(Repository[User], Protocol):
 
 
 class HotelRepository(Repository[Hotel], Protocol):
-    pass
+    def update(self, hotel: Hotel) -> Hotel: ...
 
 
 class RoomRepository(Repository[Room], Protocol):
@@ -30,6 +30,7 @@ class RoomRepository(Repository[Room], Protocol):
 
 class BookingRepository(Repository[Booking], Protocol):
     def has_overlap(self, room_id: UUID | str, start: date, end: date) -> bool: ...
+    def update(self, booking: Booking) -> Booking: ...
 
 
 class Repositories(Protocol):

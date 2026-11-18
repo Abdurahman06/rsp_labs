@@ -25,3 +25,17 @@ class PostgresBookingRepository(PostgresRepository[Booking]):
                         AND check_in_date < %s AND check_out_date > %s
                     )""", (room_id, end, start))
                     return cur.fetchone()[0]
+
+    def update(self, booking):
+        from psycopg.rows import dict_row
+        from internal.domain.errors import ErrNotFound
+        from internal.repository.postgres.db import mapped_errors
+        with mapped_errors():
+            with self.source.connection() as conn:
+                with conn.cursor(row_factory=dict_row) as cur:
+                    cur.execute("""UPDATE bookings SET status=%s WHERE id=%s
+                        RETURNING id, user_id, room_id, check_in_date, check_out_date,
+                        total_cost, status, created_at""", (booking.status, booking.id))
+                    if cur.rowcount == 0:
+                        raise ErrNotFound("Booking not found")
+                    return Booking(**cur.fetchone())

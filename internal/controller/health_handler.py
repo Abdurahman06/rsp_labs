@@ -16,11 +16,13 @@ class HealthHandler(BaseHTTPRequestHandler):
         payload = self.health_service.get_status()
         self._write_json(200 if payload["status"] == "ok" else 503, payload)
 
-    def _write_json(self, status: int, payload: dict) -> None:
+    def _write_json(self, status: int, payload: dict, headers: dict | None = None) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
+        for name, value in (headers or {}).items():
+            self.send_header(name, value)
         self.end_headers()
         self.wfile.write(body)
 
